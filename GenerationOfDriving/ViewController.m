@@ -16,7 +16,6 @@
 {
     MAMapView *_mapView;
     AMapSearchAPI *_searchAPI;
-    AMapPOIAroundSearchRequest *_searchRequest;
 }
 @end
 
@@ -85,8 +84,23 @@
     [_mapView addGestureRecognizer:longPress];
     
     
-
+    /*--------------------------------AMapSearchKit：------------------------------------------*/
+    
+    //  创建AMapSearchAPI对象，配置APPKEY，同时设置代理对象为self
+    /**
+     *  AMapSearch的初始化函数。
+     *
+     *  初始化之前请设置 AMapSearchServices 中的APIKey，否则将无法正常使用搜索服务.
+     *  @return AMapSearch类对象实例
+     */
+    
+    [AMapSearchServices sharedServices].apiKey=API_KEY;
+    _searchAPI = [[AMapSearchAPI alloc] init];
+    _searchAPI.delegate=self;
+    
 }
+
+
 -(void)navLeftRightBtn{
     UIButton* locationBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     locationBtn.frame = CGRectMake(0, 0, 50, 50);
@@ -144,6 +158,11 @@
     }];
     [alertController addAction:drawPolyLineAction];
     
+    UIAlertAction *drivingAction = [UIAlertAction actionWithTitle:@"路线规划" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        
+        [self drivingAction];
+    }];
+    [alertController addAction:drivingAction];
     
     UIAlertAction *clearDiskAction = [UIAlertAction actionWithTitle:@"清除缓存" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         /*!
@@ -230,32 +249,30 @@
     CLLocationCoordinate2D coordinate = [_mapView convertPoint:point toCoordinateFromView:_mapView];
     
     
-    //在该点添加一个大头针(标注)
     
-    MAPointAnnotation *pointAnn = [[MAPointAnnotation alloc] init];
-    pointAnn.coordinate = coordinate;
-    pointAnn.title = @"长按的大头针";
-    pointAnn.subtitle = @"副标题";
-    [_mapView addAnnotation:pointAnn];
+    //进行逆地编码时，请求参数类为 AMapReGeocodeSearchRequest，location为必设参数。
+    //构造AMapReGeocodeSearchRequest对象
+    AMapReGeocodeSearchRequest *regeoRequest=[[AMapReGeocodeSearchRequest alloc] init];
+    regeoRequest.location=[AMapGeoPoint locationWithLatitude:coordinate.latitude longitude:coordinate.longitude];
+    regeoRequest.requireExtension=YES;
+    
+    //发起逆地理编码
+    [_searchAPI AMapReGoecodeSearch:regeoRequest];
+    
+    
+//    //在该点添加一个大头针(标注)
+//    
+//    MAPointAnnotation *pointAnn = [[MAPointAnnotation alloc] init];
+//    pointAnn.coordinate = coordinate;
+//    pointAnn.title = @"长按的大头针";
+//    pointAnn.subtitle = @"副标题";
+//    [_mapView addAnnotation:pointAnn];
 }
 
 
 #pragma mark   searchPOIAction
 -(void)searchPOIAction{
     
-    /*--------------------------------AMapSearchKit：------------------------------------------*/
-    
-    //  创建AMapSearchAPI对象，配置APPKEY，同时设置代理对象为self
-    /**
-     *  AMapSearch的初始化函数。
-     *
-     *  初始化之前请设置 AMapSearchServices 中的APIKey，否则将无法正常使用搜索服务.
-     *  @return AMapSearch类对象实例
-     */
-    
-    [AMapSearchServices sharedServices].apiKey=API_KEY;
-    _searchAPI = [[AMapSearchAPI alloc] init];
-    _searchAPI.delegate=self;
     
     // 创建搜索周边请求类
     /*
@@ -266,11 +283,11 @@
      @property (nonatomic, copy)   AMapGeoPoint *location; //<! 中心点坐标
      @property (nonatomic, assign) NSInteger     radius; //<! 查询半径，范围：0-50000，单位：米 [default = 3000]
      */
-    _searchRequest=[[AMapPOIAroundSearchRequest alloc] init];
-    _searchRequest.keywords=@"银行|医院";
-    _searchRequest.location=[AMapGeoPoint locationWithLatitude:_mapView.userLocation.coordinate.latitude longitude:_mapView.userLocation.coordinate.longitude];
-    _searchRequest.radius=1000;
-    [_searchAPI AMapPOIAroundSearch:_searchRequest];
+    AMapPOIAroundSearchRequest *searchRequest=[[AMapPOIAroundSearchRequest alloc] init];
+    searchRequest.keywords=@"银行|医院";
+    searchRequest.location=[AMapGeoPoint locationWithLatitude:_mapView.userLocation.coordinate.latitude longitude:_mapView.userLocation.coordinate.longitude];
+    searchRequest.radius=1000;
+    [_searchAPI AMapPOIAroundSearch:searchRequest];
 }
 
 
@@ -282,9 +299,8 @@
  *  @param error   返回的错误.
  */
 - (void)AMapSearchRequest:(id)request didFailWithError:(NSError *)error{
-    if (request==_searchRequest) {
         NSLog(@"searchError:%@",error);
-    }
+    
 }
 
 /**
@@ -385,6 +401,115 @@
         return polyLineRenderer;
     }
     return nil;
+}
+
+#pragma mark -AMapDrivingRouteSearchRequest
+
+-(void)drivingAction{
+    //构造AMapDrivingRouteSearchRequest对象，设置驾车路径规划请求参数
+    AMapDrivingRouteSearchRequest *drivingRequest=[[AMapDrivingRouteSearchRequest alloc] init];
+    //无论哪种类型路径规划，origin（起点坐标）和destination（终点坐标）为必设参数。
+    drivingRequest.origin=[AMapGeoPoint locationWithLatitude:39.98264474 longitude:116.33525848];
+    drivingRequest.destination=[AMapGeoPoint locationWithLatitude:39.92395554 longitude:116.39705658];
+    drivingRequest.strategy=2;//距离优先
+    drivingRequest.requireExtension=YES;
+    
+    [_searchAPI AMapDrivingRouteSearch:drivingRequest];
+
+}
+
+-(void)onRouteSearchDone:(AMapRouteSearchBaseRequest *)request response:(AMapRouteSearchResponse *)response{
+    if (response.route==nil) {
+        return;
+    }
+  
+    //!< 路径规划信息
+    AMapRoute *amapRoute=response.route;
+    /*
+     @property (nonatomic, copy) AMapGeoPoint *origin; //!< 起点坐标
+     @property (nonatomic, copy) AMapGeoPoint *destination; //!< 终点坐标
+     
+     @property (nonatomic, assign) CGFloat  taxiCost; //!< 出租车费用（单位：元）
+     @property (nonatomic, strong) NSArray *paths; //!< 步行、驾车方案列表 AMapPath 数组
+     @property (nonatomic, strong) NSArray *transits; //!< 公交换乘方案列表 AMapTransit 数组
+     */
+    for (int i=0; i<amapRoute.paths.count; i++) {
+        AMapPath *amapPath=[amapRoute.paths objectAtIndex:i];
+        /*
+         @property (nonatomic, assign) NSInteger  distance; //!< 起点和终点的距离
+         @property (nonatomic, assign) NSInteger  duration; //!< 预计耗时（单位：秒）
+         @property (nonatomic, copy)   NSString  *strategy; //!< 导航策略
+         @property (nonatomic, strong) NSArray   *steps; //!< 导航路段 AMapStep数组
+         @property (nonatomic, assign) CGFloat    tolls; //!< 此方案费用（单位：元）
+         @property (nonatomic, assign) NSInteger  tollDistance; //!< 此方案收费路段长度（单位：米）
+         */
+
+        for (int j=0; j<amapPath.steps.count; j++) {
+            AMapStep *amapStep=[amapPath.steps objectAtIndex:j];
+            /*
+             // 基础信息
+             @property (nonatomic, copy)   NSString  *instruction; //!< 行走指示
+             @property (nonatomic, copy)   NSString  *orientation; //!< 方向
+             @property (nonatomic, copy)   NSString  *road; //!< 道路名称
+             @property (nonatomic, assign) NSInteger  distance; //!< 此路段长度（单位：米）
+             @property (nonatomic, assign) NSInteger  duration; //!< 此路段预计耗时（单位：秒）
+             @property (nonatomic, copy)   NSString  *polyline; //!< 此路段坐标点串
+             @property (nonatomic, copy)   NSString  *action; //!< 导航主要动作
+             @property (nonatomic, copy)   NSString  *assistantAction; //!< 导航辅助动作
+             @property (nonatomic, assign) CGFloat    tolls; //!< 此段收费（单位：元）
+             @property (nonatomic, assign) NSInteger  tollDistance; //!< 收费路段长度（单位：米）
+             @property (nonatomic, copy)   NSString  *tollRoad; //!< 主要收费路段
+             
+             // 扩展信息
+             @property (nonatomic, strong) NSArray *cities; //!< 途径城市 AMapCity 数组
+             */
+            
+            NSLog(@"%@",amapStep.action);
+            NSMutableString *mutPolyLine=[NSMutableString stringWithString:amapStep.polyline];
+            NSArray *pointArray=[mutPolyLine componentsSeparatedByString:@";"];
+            
+            //创建数组
+            CLLocationCoordinate2D polyLineCorrds[pointArray.count];
+
+            for (int k=0; k<pointArray.count; k++) {
+
+                polyLineCorrds[k].latitude=[[pointArray[k] componentsSeparatedByString:@","][1] floatValue];
+                polyLineCorrds[k].longitude=[[pointArray[k] componentsSeparatedByString:@","][0]  floatValue];
+
+            }
+
+            //创建折线对象
+            MAPolyline *polyLine=[MAPolyline polylineWithCoordinates:polyLineCorrds count:pointArray.count];
+            //在地图上显示折线
+            [_mapView addOverlay:polyLine];
+        }
+    }
+}
+#pragma mark --//实现逆地理编码的回调函数
+
+- (void)onReGeocodeSearchDone:(AMapReGeocodeSearchRequest *)request response:(AMapReGeocodeSearchResponse *)response{
+    
+    if (response.regeocode !=nil) {
+    /*
+     // 基础信息
+     @property (nonatomic, copy)   NSString             *formattedAddress; //!< 格式化地址
+     @property (nonatomic, strong) AMapAddressComponent *addressComponent; //!< 地址组成要素
+     
+     // 扩展信息
+     @property (nonatomic, strong) NSArray *roads; //!< 道路信息 AMapRoad 数组
+     @property (nonatomic, strong) NSArray *roadinters; //!< 道路路口信息 AMapRoadInter 数组
+     @property (nonatomic, strong) NSArray *pois; //!< 兴趣点信息 AMapPOI 数组
+     */
+        CLLocationCoordinate2D coordinate = CLLocationCoordinate2DMake(request.location.latitude, request.location.longitude);
+        
+        MAPointAnnotation *pointAnn = [[MAPointAnnotation alloc] init];
+        pointAnn.coordinate =coordinate;
+        pointAnn.title = response.regeocode.formattedAddress;
+//           pointAnn.subtitle = @"副标题";
+        [_mapView addAnnotation:pointAnn];
+
+    
+    }
 }
 
 
