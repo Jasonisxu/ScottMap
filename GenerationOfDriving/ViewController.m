@@ -16,6 +16,9 @@
 {
     MAMapView *_mapView;
     AMapSearchAPI *_searchAPI;
+    
+    NSMutableArray *mutOverlaysArray;//要移除的绘画
+    CLLocationCoordinate2D selectCoordinate; //点击到大头针的经纬度
 }
 @end
 
@@ -23,7 +26,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title=@"代驾";
+    self.title=@"高德地图";
     [self navLeftRightBtn];
     /*--------------------------------MAMapKit：------------------------------------------*/
 
@@ -98,6 +101,8 @@
     _searchAPI = [[AMapSearchAPI alloc] init];
     _searchAPI.delegate=self;
     
+    
+    mutOverlaysArray=[NSMutableArray array];
 }
 
 
@@ -164,6 +169,26 @@
     }];
     [alertController addAction:drivingAction];
     
+    UIAlertAction *removeAction = [UIAlertAction actionWithTitle:@"清除:除了定位" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        //清空原来的标注（大头针）
+        [_mapView removeAnnotations:_mapView.annotations];
+        
+        /*!
+         @brief 是否显示交通，默认为NO
+         */
+        _mapView.showTraffic=NO;
+        
+        /*!
+         @brief 移除一组Overlay
+         @param overlays 要移除的overlay数组
+         */
+
+        [_mapView removeOverlays:mutOverlaysArray];
+
+        
+    }];
+    [alertController addAction:removeAction];
+    
     UIAlertAction *clearDiskAction = [UIAlertAction actionWithTitle:@"清除缓存" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
         /*!
          @brief 清除所有磁盘上缓存的地图数据。
@@ -185,52 +210,80 @@
     if ([annotation isKindOfClass:[MAPointAnnotation class]])
     {
         static NSString *pointReuseIndetifier = @"pointReuseIndetifier";
-        MAPinAnnotationView*annotationView = (MAPinAnnotationView*)[mapView dequeueReusableAnnotationViewWithIdentifier:pointReuseIndetifier];
+        MAAnnotationView*annotationView = (MAAnnotationView*)[mapView dequeueReusableAnnotationViewWithIdentifier:pointReuseIndetifier];
         if (annotationView == nil)
         {
-            annotationView = [[MAPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pointReuseIndetifier];
+            annotationView=[[MAAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pointReuseIndetifier];
+//            annotationView = [[MAPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pointReuseIndetifier];
         }
         annotationView.canShowCallout= YES;       //设置气泡可以弹出，默认为NO
-        annotationView.animatesDrop = YES;        //设置标注动画显示，默认为NO
-        annotationView.draggable = YES;        //设置标注可以拖动，默认为NO
-        annotationView.pinColor = MAPinAnnotationColorPurple;
+//        annotationView.animatesDrop = YES;        //设置标注动画显示，默认为NO
+//        annotationView.draggable = YES;        //设置标注可以拖动，默认为NO
+//        annotationView.pinColor = MAPinAnnotationColorPurple;
+        annotationView.image=[UIImage imageNamed:@"l.png"];
+        
+        //添加显示气泡右边的button
+        UIButton *rightButton=[UIButton buttonWithType:UIButtonTypeCustom];
+        [rightButton setFrame:CGRectMake(0, 0, 50, 50)];
+        [rightButton setImage:[UIImage imageNamed:@"location.png"] forState:UIControlStateNormal];
+        [rightButton addTarget:self action:@selector(arriveAction) forControlEvents:UIControlEventTouchUpInside];
+        annotationView.rightCalloutAccessoryView=rightButton;
+        
+        
         return annotationView;
     }
     return nil;
 }
 
 
-
-- (void)mapView:(MAMapView *)mapView didSelectAnnotationView:(MAAnnotationView *)view{
-    NSArray * array = [NSArray arrayWithArray:_mapView.annotations];
+//气泡右边的到达按钮
+-(void)arriveAction{
+    /*!
+     @brief 移除一组Overlay
+     @param overlays 要移除的overlay数组
+     */
     
-    for (int i=0; i<array.count; i++)
-        
-    {
-        
-        if (view.annotation.coordinate.latitude ==((MAPointAnnotation*)array[i]).coordinate.latitude)
-            
-        {
-            //获取到当前的大头针  你可以执行一些操作
-            NSLog(@"%@",((MAPointAnnotation*)array[i]).title);
-            
-        }
-        
-        else
-            
-        {
-            
-//            //对其余的大头针进行 删除
-//            [_mapView removeAnnotation:array[i]];
-            
-        }
-        
-    }
+    [_mapView removeOverlays:mutOverlaysArray];
+
+    
+    //构造AMapDrivingRouteSearchRequest对象，设置驾车路径规划请求参数
+    AMapDrivingRouteSearchRequest *drivingRequest=[[AMapDrivingRouteSearchRequest alloc] init];
+    //无论哪种类型路径规划，origin（起点坐标）和destination（终点坐标）为必设参数。
+    drivingRequest.origin=[AMapGeoPoint locationWithLatitude:_mapView.userLocation.coordinate.latitude longitude:_mapView.userLocation.coordinate.longitude];
+    drivingRequest.destination=[AMapGeoPoint locationWithLatitude:selectCoordinate.latitude longitude:selectCoordinate.longitude];
+    drivingRequest.strategy=2;//距离优先
+    drivingRequest.requireExtension=YES;
+    
+    [_searchAPI AMapDrivingRouteSearch:drivingRequest];
 }
 
 
 
-#pragma  mark -- 长按手势Action
+#pragma  mark -- 大头针的选中或取消
+
+/*!
+ @brief 当选中或取消一个annotation views时调用此接口
+ @param mapView 地图View
+ @param views 选中的annotation views
+ */
+- (void)mapView:(MAMapView *)mapView didSelectAnnotationView:(MAAnnotationView *)view{
+    selectCoordinate=view.annotation.coordinate;
+    if (selectCoordinate.latitude !=_mapView.userLocation.coordinate.latitude && selectCoordinate.longitude !=_mapView.userLocation.coordinate.longitude) {
+        view.image=[UIImage imageNamed:@"location.png"];
+
+    }
+
+}
+
+- (void)mapView:(MAMapView *)mapView didDeselectAnnotationView:(MAAnnotationView *)view{
+    if (selectCoordinate.latitude !=_mapView.userLocation.coordinate.latitude && selectCoordinate.longitude !=_mapView.userLocation.coordinate.longitude) {
+
+    view.image=[UIImage imageNamed:@"l.png"];
+    }
+}
+
+
+#pragma  mark -- 长按手势Action(插入大头针)
 //解决手势不响应问题
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
     return YES;
@@ -379,6 +432,8 @@
     MAPolyline *polyLine=[MAPolyline polylineWithCoordinates:polyLineCorrds count:5];
     //在地图上显示折线
     [_mapView addOverlay:polyLine];
+    
+    [mutOverlaysArray addObject:polyLine];
 }
 
 /*!
@@ -464,7 +519,6 @@
              @property (nonatomic, strong) NSArray *cities; //!< 途径城市 AMapCity 数组
              */
             
-            NSLog(@"%@",amapStep.action);
             NSMutableString *mutPolyLine=[NSMutableString stringWithString:amapStep.polyline];
             NSArray *pointArray=[mutPolyLine componentsSeparatedByString:@";"];
             
@@ -482,6 +536,8 @@
             MAPolyline *polyLine=[MAPolyline polylineWithCoordinates:polyLineCorrds count:pointArray.count];
             //在地图上显示折线
             [_mapView addOverlay:polyLine];
+            
+            [mutOverlaysArray addObject:polyLine];
         }
     }
 }
@@ -505,7 +561,7 @@
         MAPointAnnotation *pointAnn = [[MAPointAnnotation alloc] init];
         pointAnn.coordinate =coordinate;
         pointAnn.title = response.regeocode.formattedAddress;
-//           pointAnn.subtitle = @"副标题";
+        pointAnn.subtitle = @"by Jason";
         [_mapView addAnnotation:pointAnn];
 
     
