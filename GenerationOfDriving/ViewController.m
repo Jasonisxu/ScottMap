@@ -10,7 +10,7 @@
 #import <MAMapKit/MAMapKit.h>
 #import <AMapSearchKit/AMapSearchKit.h>
 #import <CoreGraphics/CoreGraphics.h>
-
+#import "CustomAnnotationView.h"
 #define API_KEY  @"5c0bd595963f61124d8ec2d6146b56ab"
 @interface ViewController ()<MAMapViewDelegate,UIGestureRecognizerDelegate,AMapSearchDelegate>
 {
@@ -210,26 +210,39 @@
     if ([annotation isKindOfClass:[MAPointAnnotation class]])
     {
         static NSString *pointReuseIndetifier = @"pointReuseIndetifier";
-        MAAnnotationView*annotationView = (MAAnnotationView*)[mapView dequeueReusableAnnotationViewWithIdentifier:pointReuseIndetifier];
+//        MAAnnotationView*annotationView = (MAAnnotationView*)[mapView dequeueReusableAnnotationViewWithIdentifier:pointReuseIndetifier];
+//        if (annotationView == nil)
+//        {
+//            annotationView=[[MAAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pointReuseIndetifier];
+////            annotationView = [[MAPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pointReuseIndetifier];
+//        }
+//        annotationView.canShowCallout= YES;       //设置气泡可以弹出，默认为NO
+////        annotationView.animatesDrop = YES;        //设置标注动画显示，默认为NO
+////        annotationView.draggable = YES;        //设置标注可以拖动，默认为NO
+////        annotationView.pinColor = MAPinAnnotationColorPurple;
+//        annotationView.image=[UIImage imageNamed:@"l.png"];
+//        
+//        //添加显示气泡右边的button
+//        UIButton *rightButton=[UIButton buttonWithType:UIButtonTypeCustom];
+//        [rightButton setFrame:CGRectMake(0, 0, 50, 50)];
+//        [rightButton setImage:[UIImage imageNamed:@"location.png"] forState:UIControlStateNormal];
+//        [rightButton addTarget:self action:@selector(arriveAction) forControlEvents:UIControlEventTouchUpInside];
+//        annotationView.rightCalloutAccessoryView=rightButton;
+        
+        //自定义气泡
+        CustomAnnotationView *annotationView = (CustomAnnotationView *)[mapView dequeueReusableAnnotationViewWithIdentifier:pointReuseIndetifier];
         if (annotationView == nil)
         {
-            annotationView=[[MAAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pointReuseIndetifier];
-//            annotationView = [[MAPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pointReuseIndetifier];
+            annotationView = [[CustomAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:pointReuseIndetifier];
         }
-        annotationView.canShowCallout= YES;       //设置气泡可以弹出，默认为NO
-//        annotationView.animatesDrop = YES;        //设置标注动画显示，默认为NO
-//        annotationView.draggable = YES;        //设置标注可以拖动，默认为NO
-//        annotationView.pinColor = MAPinAnnotationColorPurple;
         annotationView.image=[UIImage imageNamed:@"l.png"];
         
-        //添加显示气泡右边的button
-        UIButton *rightButton=[UIButton buttonWithType:UIButtonTypeCustom];
-        [rightButton setFrame:CGRectMake(0, 0, 50, 50)];
-        [rightButton setImage:[UIImage imageNamed:@"location.png"] forState:UIControlStateNormal];
-        [rightButton addTarget:self action:@selector(arriveAction) forControlEvents:UIControlEventTouchUpInside];
-        annotationView.rightCalloutAccessoryView=rightButton;
+        // 设置为NO，用以调用自定义的calloutView
+        annotationView.canShowCallout = NO;
         
-        
+        // 设置中心点偏移，使得标注底部中间点成为经纬度对应点
+        annotationView.centerOffset = CGPointMake(0, -18);
+//        [annotationView addSubview:rightButton];
         return annotationView;
     }
     return nil;

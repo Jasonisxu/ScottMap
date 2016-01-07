@@ -18,6 +18,8 @@
 		963139171C3E1B8F0000E6D3 /* l@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 963139131C3E1B8F0000E6D3 /* l@3x.png */; };
 		963139181C3E1B8F0000E6D3 /* location@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 963139141C3E1B8F0000E6D3 /* location@2x.png */; };
 		963139191C3E1B8F0000E6D3 /* location@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 963139151C3E1B8F0000E6D3 /* location@3x.png */; };
+		9631391C1C3E4F030000E6D3 /* CustomCalloutView.m in Sources */ = {isa = PBXBuildFile; fileRef = 9631391B1C3E4F030000E6D3 /* CustomCalloutView.m */; };
+		9631391F1C3E54040000E6D3 /* CustomAnnotationView.m in Sources */ = {isa = PBXBuildFile; fileRef = 9631391E1C3E54040000E6D3 /* CustomAnnotationView.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +39,10 @@
 		963139131C3E1B8F0000E6D3 /* l@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "l@3x.png"; sourceTree = "<group>"; };
 		963139141C3E1B8F0000E6D3 /* location@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "location@2x.png"; sourceTree = "<group>"; };
 		963139151C3E1B8F0000E6D3 /* location@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "location@3x.png"; sourceTree = "<group>"; };
+		9631391A1C3E4F030000E6D3 /* CustomCalloutView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CustomCalloutView.h; sourceTree = "<group>"; };
+		9631391B1C3E4F030000E6D3 /* CustomCalloutView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CustomCalloutView.m; sourceTree = "<group>"; };
+		9631391D1C3E54040000E6D3 /* CustomAnnotationView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CustomAnnotationView.h; sourceTree = "<group>"; };
+		9631391E1C3E54040000E6D3 /* CustomAnnotationView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CustomAnnotationView.m; sourceTree = "<group>"; };
 		D6BC82D11BCDB32C9EC02EF7 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -87,6 +93,10 @@
 				963138FE1C35223B0000E6D3 /* AppDelegate.m */,
 				963139001C35223B0000E6D3 /* ViewController.h */,
 				963139011C35223B0000E6D3 /* ViewController.m */,
+				9631391A1C3E4F030000E6D3 /* CustomCalloutView.h */,
+				9631391B1C3E4F030000E6D3 /* CustomCalloutView.m */,
+				9631391D1C3E54040000E6D3 /* CustomAnnotationView.h */,
+				9631391E1C3E54040000E6D3 /* CustomAnnotationView.m */,
 				963139031C35223B0000E6D3 /* Main.storyboard */,
 				963139061C35223B0000E6D3 /* Assets.xcassets */,
 				963139081C35223B0000E6D3 /* LaunchScreen.storyboard */,
@@ -250,7 +260,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9631391C1C3E4F030000E6D3 /* CustomCalloutView.m in Sources */,
 				963139021C35223B0000E6D3 /* ViewController.m in Sources */,
+				9631391F1C3E54040000E6D3 /* CustomAnnotationView.m in Sources */,
 				963138FF1C35223B0000E6D3 /* AppDelegate.m in Sources */,
 				963138FC1C35223B0000E6D3 /* main.m in Sources */,
 			);
